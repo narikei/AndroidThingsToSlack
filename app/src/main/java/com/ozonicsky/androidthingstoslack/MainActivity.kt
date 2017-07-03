@@ -2,6 +2,8 @@ package com.ozonicsky.androidthingstoslack
 
 import android.app.Activity
 import android.os.Bundle
+import android.util.Log
+import com.github.kittinunf.fuel.Fuel
 import com.google.android.things.pio.Gpio
 import com.google.android.things.pio.GpioCallback
 import com.google.android.things.pio.PeripheralManagerService
@@ -29,6 +31,9 @@ import com.google.android.things.pio.PeripheralManagerService
  */
 class MainActivity : Activity() {
 
+    // todo slackで取得したIncoming WebHooksに置き換える
+    val webHookUrl: String = "https://hooks.slack.com/services/xxxxx/xxxxx/xxxxx"
+
     val ledPin: String = "BCM6"
     val buttonPin: String = "BCM16"
 
@@ -46,9 +51,20 @@ class MainActivity : Activity() {
         button.registerGpioCallback(object : GpioCallback() {
             override fun onGpioEdge(gpio: Gpio): Boolean {
                 led.value = gpio.value != true
+                if (gpio.value) sendMessage()
                 return true
             }
         })
     }
 
+    private fun sendMessage() {
+        val body: String = "{ \"text\" : \"ボタンが押されました！\" }"
+        Fuel.post(webHookUrl).body(body).responseString { _, response, result ->
+            result.fold({ _ ->
+                Log.d("res", response.toString())
+            }, { err ->
+                Log.e("err", err.toString())
+            })
+        }
+    }
 }
